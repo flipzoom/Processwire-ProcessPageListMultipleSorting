@@ -71,7 +71,7 @@ class ProcessPageListMultipleSorting extends Process implements ConfigurableModu
         $field->columnWidth = 100;
         $field->label       = __('Information and usage');
         $field->markupText  = __('Extend the ordinary <u>sort of children of a template</u> in the <u>admin page tree</u> with multiple properties. For each template, you can define your own rule. Write each template (template-name) in a row, followed by a colon and then the additional field name for sorting. <b>Example:</b> All children of the template "blog" to be sorted in descending order according to the date of creation, then descending by modification date, and then by title. Type:<br><br><b>blog: -created, -modified, title</b><br><br>Pretty, huh? Then I am pleased to receive a donation on ')."<a href='https://flattr.com/submit/auto?user_id=flipzoom&url=https%3A%2F%2Fgithub.com%2FFlipZoomMedia%2FProcesswire-ProcessPageListMultipleSorting' target='_blank'>Flattr</a> ".__('or')." <a href='https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=david%2ekarich%40flipzoom%2ede&lc=DE&item_name=FlipZoom%20Media%20Inc%2e&item_number=ProcessPageListMultipleSorting&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHostedGuest' target='_blank'>PayPal</a>.";
-        $fields->add($field)->render();
+        $fields->add($field);
         
         // ------------------------------------------------------------------------
         // Define text input field for the stylesheet-prefix.
