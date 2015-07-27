@@ -4,8 +4,8 @@
  * @author  FlipZoom Media Inc. - David Karich
  * @contact David Karich <david.karich@flipzoom.de>
  * @website www.flipzoom.de
- * @create  2015-07-23
- * @style   Tab size: 4 / Soft tabs: NO
+ * @create  2015-07-27
+ * @style   Tab size: 4 / Soft tabs: YES
  * ----------------------------------------------------------------------------------
  * @licence
  * Copyright (c) 2015 FlipZoom Media Inc. - David Karich
@@ -30,22 +30,22 @@
 class ProcessPageListMultipleSorting extends Process implements Module, ConfigurableModule {
 
     /**
-	 * ------------------------------------------------------------------------
-	 * Module configuration
-	 * ------------------------------------------------------------------------
-	 * @return [array]
-	 */
+     * ------------------------------------------------------------------------
+     * Module configuration
+     * ------------------------------------------------------------------------
+     * @return [array]
+     */
     public static function getModuleInfo() {
 
         return array(
-            'title' 	=> __('Admin Page Tree Multible Sorting'),
-            'summary' 	=> __('Enables template-dependent Sorting of the page tree after multiple properties.'),
+            'title'     => __('Admin Page Tree Multible Sorting'),
+            'summary'   => __('Enables template-dependent Sorting of the page tree after multiple properties.'),
             'author'    => 'FlipZoom Media Inc. - David Karich',
-            'href'		=> 'http://www.flipzoom.de',
-            'icon'		=> 'sort-amount-asc',
+            'href'      => 'http://www.flipzoom.de',
+            'icon'      => 'sort-amount-asc',
             'version'   => 100,
-            'singular' 	=> true,
-            'autoload' 	=> true,
+            'singular'  => true,
+            'autoload'  => true,
             );
     }
 
