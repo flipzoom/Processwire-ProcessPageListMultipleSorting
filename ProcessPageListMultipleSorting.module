@@ -41,7 +41,7 @@ class ProcessPageListMultipleSorting extends Process implements Module, Configur
             'title'     => __('Admin Page Tree Multible Sorting'),
             'summary'   => __('Enables template-dependent Sorting of the page tree after multiple properties.'),
             'author'    => 'FlipZoom Media Inc. - David Karich',
-            'href'      => 'http://www.flipzoom.de',
+            'href'      => 'https://github.com/FlipZoomMedia/Processwire-ProcessPageListMultipleSorting',
             'icon'      => 'sort-amount-asc',
             'version'   => 100,
             'singular'  => true,
