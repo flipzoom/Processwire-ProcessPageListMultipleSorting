@@ -1,0 +1,230 @@
+<?php
+
+/**
+ * @author  FlipZoom Media Inc. - David Karich
+ * @contact David Karich <david.karich@flipzoom.de>
+ * @website www.flipzoom.de
+ * @create  2015-07-23
+ * @style   Tab size: 4 / Soft tabs: NO
+ * ----------------------------------------------------------------------------------
+ * @licence
+ * Copyright (c) 2015 FlipZoom Media Inc. - David Karich
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and associated documentation files (the "Software"), to deal 
+ * in the Software without restriction, including without limitation the rights 
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+ * copies of the Software, and to permit persons to whom the Software is furnished 
+ * to do so, subject to the following conditions: The above copyright notice and 
+ * this permission notice shall be included in all copies or substantial portions 
+ * of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION 
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * ----------------------------------------------------------------------------------
+ */
+
+class ProcessPageListMultipleSorting extends Process implements Module, ConfigurableModule {
+
+    /**
+	 * ------------------------------------------------------------------------
+	 * Module configuration
+	 * ------------------------------------------------------------------------
+	 * @return [array]
+	 */
+    public static function getModuleInfo() {
+
+        return array(
+            'title' 	=> __('Admin Page Tree Multible Sorting'),
+            'summary' 	=> __('Enables template-dependent Sorting of the page tree after multiple properties.'),
+            'author'    => 'FlipZoom Media Inc. - David Karich',
+            'href'		=> 'http://www.flipzoom.de',
+            'icon'		=> 'sort-amount-asc',
+            'version'   => 100,
+            'singular' 	=> true,
+            'autoload' 	=> true,
+            );
+    }
+
+    /**
+     * ------------------------------------------------------------------------
+     * Configure the input fields for the backend.
+     * ------------------------------------------------------------------------
+     * @param  array  $data Module data from the database.
+     */
+    public static function getModuleConfigInputfields(array $data) {
+        
+        // ------------------------------------------------------------------------
+        // Initialize InputField wrapper
+        // ------------------------------------------------------------------------
+        $fields             = new InputfieldWrapper(); 
+
+        // ------------------------------------------------------------------------
+        // Define markup input field for description.
+        // ------------------------------------------------------------------------
+        $field              = wire('modules')->get('InputfieldMarkup');
+        $field->columnWidth = 100;
+        $field->label       = __('Information and usage');
+        $field->markupText  = __('Extend the ordinary <u>sort of children of a template</u> in the <u>admin page tree</u> with multiple properties. For each template, you can define your own rule. Write each template (template-name) in a row, followed by a colon and then the additional field name for sorting. <b>Example:</b> All children of the template "blog" to be sorted in descending order according to the date of creation, then descending by modification date, and then by title. Type:<br><br><b>blog: -created, -modified, title</b><br><br>Pretty, huh? Then I am pleased to receive a donation on ')."<a href='https://flattr.com/submit/auto?user_id=flipzoom&url=https%3A%2F%2Fgithub.com%2FFlipZoomMedia%2FProcesswire-ProcessPageListMultipleSorting' target='_blank'>Flattr</a> ".__('or')." <a href='https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=david%2ekarich%40flipzoom%2ede&lc=DE&item_name=FlipZoom%20Media%20Inc%2e&item_number=ProcessPageListMultipleSorting&no_note=0&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHostedGuest' target='_blank'>PayPal</a>.";
+        $fields->add($field);
+        
+        // ------------------------------------------------------------------------
+        // Define text input field for the stylesheet-prefix.
+        // ------------------------------------------------------------------------
+        $field              = wire('modules')->get('InputfieldTextarea');
+        $field->name        = 'sorting_rules';
+        $field->label       = __('Page Tree Sorting Rules');
+        $field->columnWidth = 100;
+        $field->rows        = 15;
+        $field->value       = (!empty($data['sorting_rules'])) ? wire('sanitizer')->textarea($data['sorting_rules']) : '';
+        $field->placeholder = "basic-page: title, -template\nblog: -created, -modified, title";
+        $field->notes       = __('The Sort corresponds to regular selectors. In other words, with a minus (-) before the field-name or property DESC sorted without minus ASC.');
+        $fields->add($field);
+ 
+        // ------------------------------------------------------------------------
+        // Return of the fields.
+        // ------------------------------------------------------------------------
+        return $fields; 
+    }
+
+    /**
+     * ------------------------------------------------------------------------
+     * Initialize the module
+     * ------------------------------------------------------------------------
+     * ProcessWire calls this when the module is loaded. For 'autoload' modules, this will be called
+     * when ProcessWire's API is ready. As a result, this is a good place to attach hooks.
+     */
+    public function init() {
+
+        // Add hook in find children process
+        // ------------------------------------------------------------------------
+        $this->addHookAfter("ProcessPageList::find", $this, "hookPageTreeFind");
+
+    }
+
+    /**
+     * ------------------------------------------------------------------------
+     * Rewrite the selectorString for sorting
+     * ------------------------------------------------------------------------
+     */
+    public function hookPageTreeFind($event) {
+
+        // Get current arguments
+        // ------------------------------------------------------------------------
+        $page               = $event->arguments('page');
+        $selectorString     = $event->arguments('selectorString');
+
+        // Get templates rules
+        // ------------------------------------------------------------------------
+        $_templateRules     = $this->getTemplateRules();
+
+        // Check if current template is in rule-set
+        // ------------------------------------------------------------------------
+        if(!empty(@$_templateRules[$page->template->name])) {
+
+            // Extend the find children sorting for this template
+            // ------------------------------------------------------------------------
+            $event->return  = $page->children($selectorString . "," . $_templateRules[$page->template->name]);
+
+        } else {
+            return;
+        }
+    }
+
+    /**
+     * ------------------------------------------------------------------------
+     * Get an array with template-based sorting rules
+     * ------------------------------------------------------------------------
+     * @return [array]
+     */
+    public function getTemplateRules() {
+
+        // Check if rules exist
+        // ------------------------------------------------------------------------
+        if(empty($this->sorting_rules)) return;
+
+        // Init new rule array
+        // ------------------------------------------------------------------------
+        $_sortingRules  = array();
+
+        // Read and parse sorting rules
+        // ------------------------------------------------------------------------
+        $_rules         = explode("\n", $this->sorting_rules);
+        $_rules         = (is_array($_rules)) ? $_rules : array($this->sorting_rules);
+
+        // Process each rule
+        // ------------------------------------------------------------------------
+        foreach ($_rules as $_rule) {
+
+            // Get template name
+            // ------------------------------------------------------------------------
+            $_template                      = explode(":", $_rule);
+            $_template_name                 = trim(wire('sanitizer')->name($_template[0]));
+
+            // Get template rule
+            // ------------------------------------------------------------------------
+            $_templateRule                  = trim($_template[1]);
+            $_templateRule                  = $this->getSortingString($_templateRule);
+
+            // Write template/sorting rules
+            // ------------------------------------------------------------------------
+            if($_templateRule != false AND $_template_name) {
+                $_sortingRules[$_template_name] = $_templateRule;
+            }
+        }
+
+        return $_sortingRules;
+    }
+
+    /**
+     * ------------------------------------------------------------------------
+     * Construct a sorting string for selector
+     * ------------------------------------------------------------------------
+     * @param  [string] $string String to extract
+     * @return [string]         Sorting string for selector
+     */
+    private function getSortingString($_string) {
+
+        // Check if empty
+        // ------------------------------------------------------------------------
+        if(empty($_string)) return false;
+
+        // Init sorting string
+        // ------------------------------------------------------------------------
+        $_sortingString     = "";
+
+        // Check for multiple rules
+        // ------------------------------------------------------------------------
+        if(strstr($_string, ",")) {
+
+            // Trim and explode each field
+            // ------------------------------------------------------------------------
+            $_sortingString = array_map('trim', explode(',', $_string));
+
+            // Construct sorting-rule for selector
+            // ------------------------------------------------------------------------
+            $_sortingString = array_map(function($_rule){
+                return "sort=" . wire('sanitizer')->name($_rule);
+            }, $_sortingString);
+
+            // Write rule array to sorting-string
+            // ------------------------------------------------------------------------
+            $_sortingString = implode(",", $_sortingString);
+
+        // Else write single rule
+        // ------------------------------------------------------------------------
+        } else {
+            $_sortingString = "sort=".trim($_string);
+        }
+
+        // Return final sorting string
+        // ------------------------------------------------------------------------
+        return $_sortingString;
+
+    }
+}
+
+?>
